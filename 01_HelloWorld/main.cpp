@@ -3,7 +3,7 @@
 
 #define HELLO_WORLD_MESSAGE "Hello World!"
 
-void Print(std::string message)
+void Print(const std::string& message)
 {
     std::cout << "[HelloWorldApp] " << message << '\n';
 } 
@@ -15,19 +15,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-// g++
-/*main(0, {})
-{
-    if (argc == 0)
-    {
-        // error
-        return -1 
-    }
-    else
-    {
-        // compile
-    }
-
-    return 0;
-}*/
