@@ -149,19 +149,36 @@ private:
     uint8_t m_Columns;
 };
 
+class InputManager {
+public:
+    static bool IsKeyDown(char key)
+    {
+        return GetAsyncKeyState(key) & 0x0001;
+    }
+};
+
 int main(int argc, char* argv[])
 {
     Renderer renderer;
     renderer.Resize(70, 20);
 
     Sprite spaceShipSprite = Sprite(3, 3, "123456789");
+    uint8_t spaceShipPosX = 6;
+    uint8_t spaceShipPosY = 5;
 
     while (true)
     {
+        // Handle input
+        if (InputManager::IsKeyDown('D')) spaceShipPosX += 1;
+        if (InputManager::IsKeyDown('A')) spaceShipPosX -= 1;
+        if (InputManager::IsKeyDown('W')) spaceShipPosY -= 1;
+        if (InputManager::IsKeyDown('S')) spaceShipPosY += 1;
+
+        // Render
         renderer.Clear();
         
         renderer.SubmitRect(2, 1, 2, 4);
-        renderer.SubmitSprite(6, 5, spaceShipSprite);
+        renderer.SubmitSprite(spaceShipPosX, spaceShipPosY, spaceShipSprite);
 
         renderer.Draw();
     }
