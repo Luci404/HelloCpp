@@ -2,6 +2,16 @@
 #include <windows.h>
 #include <iostream>
 #include <string.h>
+#include <vector>
+
+class InputManager
+{
+public:
+    static bool IsKeyDown(char key)
+    {
+        return GetAsyncKeyState(key) & 0x0001;
+    }
+};
 
 class Sprite
 {
@@ -58,6 +68,43 @@ private:
     CHAR_INFO* m_SpriteBuffer;
     uint8_t m_Width;
     uint8_t m_Height;
+};
+
+class Entity
+{
+public:
+    Entity()
+    {
+        m_PosX = 2;
+        m_PosY = 2;
+        m_Sprite = new Sprite(3, 3, "I I/+\\***");
+    }
+
+    void Tick()
+    {
+        if (InputManager::IsKeyDown('D')) MoveX(1);
+        if (InputManager::IsKeyDown('A')) MoveX(-1);
+        if (InputManager::IsKeyDown('W')) MoveY(-1);
+        if (InputManager::IsKeyDown('S')) MoveY(1);
+    }
+
+    void MoveX(uint8_t offset) { m_PosX += offset; }
+    void MoveY(uint8_t offset) { m_PosY += offset; } 
+
+    uint8_t GetPosX() { return m_PosX; }
+    uint8_t GetPosY() { return m_PosY; } 
+    Sprite* GetSprite() { return m_Sprite; } 
+
+private:
+    uint8_t m_PosX;
+    uint8_t m_PosY;
+    Sprite* m_Sprite;
+};
+
+class Scene
+{
+public:
+    std::vector<Entity> Entities;
 };
 
 class Renderer
@@ -131,13 +178,13 @@ public:
         }
     }
 
-    void SubmitSprite(uint8_t posX, uint8_t posY, Sprite& sprite)
+    void SubmitSprite(uint8_t posX, uint8_t posY, Sprite* sprite)
     { 
-        for(uint8_t x = 0; x < sprite.GetWidth(); x++)
+        for(uint8_t x = 0; x < sprite->GetWidth(); x++)
         {
-            for(uint8_t y = 0; y < sprite.GetHeight(); y++)
+            for(uint8_t y = 0; y < sprite->GetHeight(); y++)
             {
-                SubmitPixel(posX + x, posY + y, sprite.GetChar(x, y));
+                SubmitPixel(posX + x, posY + y, sprite->GetChar(x, y));
             }
         }
     }
@@ -149,39 +196,45 @@ private:
     uint8_t m_Columns;
 };
 
-class InputManager {
+class Game
+{
 public:
-    static bool IsKeyDown(char key)
+    void Run()
     {
-        return GetAsyncKeyState(key) & 0x0001;
+        m_Renderer.Resize(70, 30);
+
+        Entity shipEntity;
+        m_Scene.Entities.push_back(shipEntity);
+
+        while (true)
+        {
+            // Entity Tick
+            for (Entity& entity : m_Scene.Entities)
+            {
+                entity.Tick();
+            }
+
+            // Render
+            m_Renderer.Clear();
+
+            for (Entity& entity : m_Scene.Entities)
+            {
+                m_Renderer.SubmitSprite(entity.GetPosX(), entity.GetPosY(), entity.GetSprite());
+            }
+
+            m_Renderer.Draw();
+        }
     }
+
+private:
+    Renderer m_Renderer;
+    Scene m_Scene;
 };
 
 int main(int argc, char* argv[])
 {
-    Renderer renderer;
-    renderer.Resize(70, 20);
-
-    Sprite spaceShipSprite = Sprite(3, 3, "123456789");
-    uint8_t spaceShipPosX = 6;
-    uint8_t spaceShipPosY = 5;
-
-    while (true)
-    {
-        // Handle input
-        if (InputManager::IsKeyDown('D')) spaceShipPosX += 1;
-        if (InputManager::IsKeyDown('A')) spaceShipPosX -= 1;
-        if (InputManager::IsKeyDown('W')) spaceShipPosY -= 1;
-        if (InputManager::IsKeyDown('S')) spaceShipPosY += 1;
-
-        // Render
-        renderer.Clear();
-        
-        renderer.SubmitRect(2, 1, 2, 4);
-        renderer.SubmitSprite(spaceShipPosX, spaceShipPosY, spaceShipSprite);
-
-        renderer.Draw();
-    }
+    Game game;
+    game.Run();
 
     return 0;
 }
