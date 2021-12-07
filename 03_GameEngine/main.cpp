@@ -101,6 +101,10 @@ private:
     Sprite* m_Sprite;
 };
 
+class SpaceShip : public Entity
+{
+};
+
 class Scene
 {
 public:
