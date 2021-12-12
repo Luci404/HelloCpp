@@ -1,5 +1,24 @@
 #include <iostream>
+#include <vector>
 #include <windows.h>
+
+class Entity
+{
+public:
+    void BeginPlay()
+    {
+    }
+
+    void Tick()
+    {
+    }
+};
+
+class Scene
+{
+public: 
+    std::vector<Entity> SceneEntities;
+};
 
 class Game
 {
@@ -13,7 +32,6 @@ public:
         while (true)
         {
             Tick();
-            
             Sleep(10);
         }
     }
@@ -27,6 +45,9 @@ public:
     {
         std::cout << "Game::Tick()" << std::endl;
     }
+    
+private:
+    Scene m_Scene;
 };
 
 int main(int argc, char* argv[])
