@@ -2,15 +2,6 @@
 #include <vector>
 #include <windows.h>
 
-class InputManager
-{
-public:
-    static bool IsKeyDown(char key)
-    {
-        return GetAsyncKeyState(key) & 0x0001;
-    }
-};
-
 class Entity
 {
 public:
@@ -43,6 +34,9 @@ public:
 
         // Create new screen buffer
         m_ScreenBuffer = new CHAR_INFO[m_Rows * m_Columns];
+
+        // Clear console
+        system("cls");
     };
 
     void Clear()
