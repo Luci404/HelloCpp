@@ -2,22 +2,59 @@
 #include <vector>
 #include <windows.h>
 
+#define SHITTYENGINE_KEYCODE_SPACE 0x20
+#define SHITTYENGINE_KEYCODE_A 0x41
+#define SHITTYENGINE_KEYCODE_D 0x44
+#define SHITTYENGINE_KEYCODE_S 0x53
+#define SHITTYENGINE_KEYCODE_W 0x57
+
+class InputManager
+{
+public:
+    static bool IsKeyDown(int keyCode)
+    {
+        return GetAsyncKeyState(keyCode) /*& 0x8000*/;
+    }
+};
+
 class Entity
 {
 public:
-    void BeginPlay()
+    Entity()
+    {
+        PositionX = 0;
+        PositionY = 0;
+    }
+
+    virtual void BeginPlay()
     {
     }
 
-    void Tick()
+    virtual void Tick()
     {
+    }
+
+public:
+    uint16_t PositionX;
+    uint16_t PositionY;
+};
+
+class PlayerEntity : public Entity
+{
+public:
+    virtual void Tick() override
+    {
+        if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_D)) PositionX += 1;
+        if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_A)) PositionX -= 1;
+        if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_S)) PositionY += 1;
+        if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_W)) PositionY -= 1;
     }
 };
 
 class Scene
 {
 public:
-    std::vector<Entity> SceneEntities;
+    std::vector<Entity *> SceneEntities;
 };
 
 class Renderer
@@ -35,7 +72,6 @@ public:
         // Create new screen buffer
         m_ScreenBuffer = new CHAR_INFO[m_Rows * m_Columns];
 
-        // Clear console
         system("cls");
     };
 
@@ -48,7 +84,7 @@ public:
                 // For every pixel
                 CHAR_INFO charInfo;
                 charInfo.Char.AsciiChar = '.';
-                charInfo.Attributes = FOREGROUND_GREEN;
+                charInfo.Attributes = BACKGROUND_BLUE | FOREGROUND_BLUE;
 
                 SubmitPixel(row, column, charInfo);
             }
@@ -63,7 +99,7 @@ public:
             {
                 CHAR_INFO charInfo;
                 charInfo.Char.AsciiChar = '#';
-                charInfo.Attributes = FOREGROUND_BLUE;
+                charInfo.Attributes = BACKGROUND_GREEN | FOREGROUND_GREEN;
 
                 SubmitPixel(row + positionX, column + positionY, charInfo);
             }
@@ -116,15 +152,19 @@ public:
 
     void Tick()
     {
+        m_Player.Tick();
+
         m_Renderer.Clear();
-        m_Renderer.SubmitRect(3, 3, 5, 5);
-        m_Renderer.SubmitRect(12, 3, 10, 5);
+        m_Renderer.SubmitRect(m_Player.PositionX, m_Player.PositionY, 3, 3);
         m_Renderer.Draw();
     }
 
 private:
     Scene m_Scene;
     Renderer m_Renderer;
+
+    // TMP
+    PlayerEntity m_Player;
 };
 
 int main(int argc, char *argv[])
