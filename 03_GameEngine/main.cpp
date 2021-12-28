@@ -17,6 +17,54 @@ public:
     }
 };
 
+class Sprite
+{
+public:
+    Sprite(uint16_t sizeX, uint16_t sizeY, const char* spriteBuffer)
+    {
+        if (strlen(spriteBuffer) != sizeX * sizeY)
+        {
+            std::cout << "ERROR: Failed to create sprite, sizes didn't match input buffer size." << std::endl;
+            return;
+        }
+
+        this->SizeX = sizeX;
+        this->SizeY = sizeY;
+
+        SpriteBuffer = new CHAR_INFO[this->SizeX * this->SizeY];
+
+        // Construct SpriteBuffer from the input string (spriteBuffer).
+        for (uint16_t i = 0; i < strlen(spriteBuffer); i++)
+        {
+            CHAR_INFO charInfo;
+            charInfo.Char.AsciiChar = spriteBuffer[i];
+            charInfo.Attributes = FOREGROUND_GREEN;
+
+            this->SpriteBuffer[i] = charInfo;
+        }
+    }    
+    
+    const CHAR_INFO GetChar(uint8_t x, uint8_t y)
+    {
+        uint16_t index = y * SizeX + x;
+
+        if (index < SizeX * SizeY)
+        {
+            return SpriteBuffer[index];
+        }
+
+        CHAR_INFO errorCharInfo;
+        errorCharInfo.Char.AsciiChar = 'X';    
+        errorCharInfo.Attributes = FOREGROUND_RED;
+        return errorCharInfo;
+    }
+
+public:
+    uint16_t SizeX;
+    uint16_t SizeY;
+    CHAR_INFO* SpriteBuffer;
+};
+
 class Entity
 {
 public:
@@ -37,11 +85,17 @@ public:
 public:
     uint16_t PositionX;
     uint16_t PositionY;
+    Sprite* EntitySprite;
 };
 
 class PlayerEntity : public Entity
 {
 public:
+    virtual void BeginPlay()
+    {
+        EntitySprite = new Sprite(3, 3, "I I/+\\***");
+    }
+
     virtual void Tick() override
     {
         if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_D)) PositionX += 1;
@@ -49,12 +103,6 @@ public:
         if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_S)) PositionY += 1;
         if (InputManager::IsKeyDown(SHITTYENGINE_KEYCODE_W)) PositionY -= 1;
     }
-};
-
-class Scene
-{
-public:
-    std::vector<Entity *> SceneEntities;
 };
 
 class Renderer
@@ -84,7 +132,7 @@ public:
                 // For every pixel
                 CHAR_INFO charInfo;
                 charInfo.Char.AsciiChar = '.';
-                charInfo.Attributes = BACKGROUND_BLUE | FOREGROUND_BLUE;
+                charInfo.Attributes = FOREGROUND_GREEN;
 
                 SubmitPixel(row, column, charInfo);
             }
@@ -102,6 +150,17 @@ public:
                 charInfo.Attributes = BACKGROUND_GREEN | FOREGROUND_GREEN;
 
                 SubmitPixel(row + positionX, column + positionY, charInfo);
+            }
+        }
+    }
+
+    void SubmitSprite(uint8_t posX, uint8_t posY, Sprite* sprite)
+    { 
+        for(uint8_t x = 0; x < sprite->SizeX; x++)
+        {
+            for(uint8_t y = 0; y < sprite->SizeY; y++)
+            {
+                SubmitPixel(posX + x, posY + y, sprite->GetChar(x, y));
             }
         }
     }
@@ -127,7 +186,7 @@ public:
 
 private:
     HANDLE m_ScreenBufferHandle;
-    CHAR_INFO *m_ScreenBuffer;
+    CHAR_INFO* m_ScreenBuffer;
     uint8_t m_Rows;
     uint8_t m_Columns;
 };
@@ -148,23 +207,36 @@ public:
 
     void BeginPlay()
     {
+        // TODO: Manage data on destruction.
+        m_SceneEntities.push_back(new PlayerEntity());
+
+        // Call the BeginPlay() function of all entities in the scene.
+        for (Entity* entity : m_SceneEntities)
+        {
+            entity->BeginPlay();
+        }
     }
 
     void Tick()
     {
-        m_Player.Tick();
+        // Call the Tick() function of all entities in the scene.
+        for (Entity* entity : m_SceneEntities)
+        {
+            entity->Tick();
+        }
 
         m_Renderer.Clear();
-        m_Renderer.SubmitRect(m_Player.PositionX, m_Player.PositionY, 3, 3);
+        // Draw all entities in the scene.
+        for (Entity* entity : m_SceneEntities)
+        {
+            m_Renderer.SubmitSprite(entity->PositionX, entity->PositionY, entity->EntitySprite);
+        }
         m_Renderer.Draw();
     }
 
 private:
-    Scene m_Scene;
+    std::vector<Entity*> m_SceneEntities;
     Renderer m_Renderer;
-
-    // TMP
-    PlayerEntity m_Player;
 };
 
 int main(int argc, char *argv[])
